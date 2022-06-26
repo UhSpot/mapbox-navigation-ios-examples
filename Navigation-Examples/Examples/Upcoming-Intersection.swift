@@ -1,3 +1,10 @@
+/*
+ This code example is part of the Mapbox Navigation SDK for iOS demo app,
+ which you can build and run: https://github.com/mapbox/mapbox-navigation-ios-examples
+ To learn more about each example in this app, including descriptions and links
+ to documentation, see our docs: https://docs.mapbox.com/ios/navigation/examples/electronic-horizon
+ */
+
 import UIKit
 import MapboxNavigation
 import MapboxCoreNavigation
@@ -11,13 +18,16 @@ class ElectronicHorizonEventsViewController: UIViewController {
     private let upcomingIntersectionLabel = UILabel()
     private let passiveLocationManager = PassiveLocationManager()
     private lazy var passiveLocationProvider = PassiveLocationProvider(locationManager: passiveLocationManager)
+    private let routeLineColor: UIColor = .green.withAlphaComponent(0.9)
+    private let traversedRouteColor: UIColor = .clear
+    private var totalDistance: CLLocationDistance = 0.0
 
     override func viewDidLoad() {
         super.viewDidLoad()
         
         setupNavigationMapView()
         setupUpcomingIntersectionLabel()
-        subscribeToElectronicHorizonUpdates()
+        setupElectronicHorizonUpdates()
     }
 
     func setupNavigationMapView() {
@@ -29,6 +39,13 @@ class ElectronicHorizonEventsViewController: UIViewController {
         })
         
         view.addSubview(navigationMapView)
+    }
+    
+    func setupElectronicHorizonUpdates() {
+        // Customize the `ElectronicHorizonOptions` for `PassiveLocationManager` to start Electronic Horizon updates.
+        let options = ElectronicHorizonOptions(length: 500, expansionLevel: 1, branchLength: 50, minTimeDeltaBetweenUpdates: nil)
+        passiveLocationManager.startUpdatingElectronicHorizon(with: options)
+        subscribeToElectronicHorizonUpdates()
     }
 
     private func setupUpcomingIntersectionLabel() {
@@ -55,7 +72,9 @@ class ElectronicHorizonEventsViewController: UIViewController {
 
     @objc private func didUpdateElectronicHorizonPosition(_ notification: Notification) {
         let horizonTreeKey = RoadGraph.NotificationUserInfoKey.treeKey
-        guard let horizonTree = notification.userInfo?[horizonTreeKey] as? RoadGraph.Edge else {
+        guard let horizonTree = notification.userInfo?[horizonTreeKey] as? RoadGraph.Edge,
+              let position = notification.userInfo?[RoadGraph.NotificationUserInfoKey.positionKey] as? RoadGraph.Position,
+              let updatesMostProbablePath = notification.userInfo?[RoadGraph.NotificationUserInfoKey.updatesMostProbablePathKey] as? Bool else {
             return
         }
 
@@ -63,9 +82,17 @@ class ElectronicHorizonEventsViewController: UIViewController {
         let upcomingCrossStreet = nearestCrossStreetName(from: horizonTree)
         updateLabel(currentStreetName: currentStreetName, predictedCrossStreet: upcomingCrossStreet)
 
-        // Drawing the most probable path
-        let mostProbablePath = routeLine(from: horizonTree, roadGraph: passiveLocationManager.roadGraph)
-        updateMostProbablePath(with: mostProbablePath)
+        // Update the most probable path when the position update indicates a new most probable path (MPP).
+        if updatesMostProbablePath {
+            let mostProbablePath = routeLine(from: horizonTree, roadGraph: passiveLocationManager.roadGraph)
+            updateMostProbablePath(with: mostProbablePath)
+        }
+        
+        // Update the most probable path layer when the position update indicates
+        // a change of the fraction of the point traveled distance to the current edge’s length.
+        updateMostProbablePathLayer(fractionFromStart: position.fractionFromStart,
+                                    roadGraph: passiveLocationManager.roadGraph,
+                                    currentEdge: horizonTree.identifier)
     }
 
     private func streetName(for edge: RoadGraph.Edge) -> String? {
@@ -116,9 +143,15 @@ class ElectronicHorizonEventsViewController: UIViewController {
     private func routeLine(from edge: RoadGraph.Edge, roadGraph: RoadGraph) -> [LocationCoordinate2D] {
         var coordinates = [LocationCoordinate2D]()
         var edge: RoadGraph.Edge? = edge
+        totalDistance = 0.0
+        
+        // Update the route line shape and total distance of the most probable path.
         while let currentEdge = edge {
             if let shape = roadGraph.edgeShape(edgeIdentifier: currentEdge.identifier) {
                 coordinates.append(contentsOf: shape.coordinates.dropFirst(coordinates.isEmpty ? 0 : 1))
+            }
+            if let distance = roadGraph.edgeMetadata(edgeIdentifier: currentEdge.identifier)?.length {
+                totalDistance += distance
             }
             edge = currentEdge.outletEdges.max(by: { $0.probability < $1.probability })
         }
@@ -127,12 +160,26 @@ class ElectronicHorizonEventsViewController: UIViewController {
 
     private func updateMostProbablePath(with mostProbablePath: [CLLocationCoordinate2D]) {
         let feature = Feature(geometry: .lineString(LineString(mostProbablePath)))
-        try? navigationMapView.mapView.mapboxMap.style.updateGeoJSONSource(withId: sourceIdentifier, geoJSON: feature)
+        try? navigationMapView.mapView.mapboxMap.style.updateGeoJSONSource(withId: sourceIdentifier,
+                                                                           geoJSON: .feature(feature))
+    }
+    
+    private func updateMostProbablePathLayer(fractionFromStart: Double,
+                                             roadGraph: RoadGraph,
+                                             currentEdge: RoadGraph.Edge.Identifier) {
+        // Based on the length of current edge and the total distance of the most probable path (MPP),
+        // calculate the fraction of the point traveled distance to the whole most probable path (MPP).
+        if totalDistance > 0.0,
+           let currentLength = roadGraph.edgeMetadata(edgeIdentifier: currentEdge)?.length {
+            let fraction = fractionFromStart * currentLength / totalDistance
+            updateMostProbablePathLayerFraction(fraction)
+        }
     }
     
     private func setupMostProbablePathStyle() {
         var source = GeoJSONSource()
         source.data = .geometry(Geometry.lineString(LineString([])))
+        source.lineMetrics = true
         try? navigationMapView.mapView.mapboxMap.style.addSource(source, id: sourceIdentifier)
         
         var layer = LineLayer(id: layerIdentifier)
@@ -144,10 +191,31 @@ class ElectronicHorizonEventsViewController: UIViewController {
                 RouteLineWidthByZoomLevel.mapValues { $0 * 0.5 }
             }
         )
-        layer.lineColor = .constant(.init(color: UIColor.green.withAlphaComponent(0.9)))
+        layer.lineColor = .constant(.init(routeLineColor))
         layer.lineCap = .constant(.round)
         layer.lineJoin = .constant(.miter)
         layer.minZoom = 9
         try? navigationMapView.mapView.mapboxMap.style.addLayer(layer)
+    }
+    
+    // Update the line gradient property of the most probable path line layer,
+    // so the part of the most probable path that has been traversed will be rendered with full transparency.
+    private func updateMostProbablePathLayerFraction(_ fraction: Double) {
+        let nextDown = max(fraction.nextDown, 0.0)
+        let exp = Exp(.step) {
+            Exp(.lineProgress)
+            traversedRouteColor
+            nextDown
+            traversedRouteColor
+            fraction
+            routeLineColor
+        }
+        
+        if let data = try? JSONEncoder().encode(exp.self),
+           let jsonObject = try? JSONSerialization.jsonObject(with: data, options: []) {
+            try? navigationMapView.mapView.mapboxMap.style.setLayerProperty(for: layerIdentifier,
+                                                                            property: "line-gradient",
+                                                                            value: jsonObject)
+        }
     }
 }

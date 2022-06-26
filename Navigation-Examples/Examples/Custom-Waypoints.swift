@@ -1,3 +1,10 @@
+/*
+ This code example is part of the Mapbox Navigation SDK for iOS demo app,
+ which you can build and run: https://github.com/mapbox/mapbox-navigation-ios-examples
+ To learn more about each example in this app, including descriptions and links
+ to documentation, see our docs: https://docs.mapbox.com/ios/navigation/examples/custom-waypoint
+ */
+
 import UIKit
 import MapboxCoreNavigation
 import MapboxNavigation
@@ -86,11 +93,14 @@ class CustomWaypointsViewController: UIViewController {
         let navigationService = MapboxNavigationService(routeResponse: routeResponse,
                                                         routeIndex: currentRouteIndex,
                                                         routeOptions: navigationRouteOptions,
+                                                        customRoutingProvider: NavigationSettings.shared.directions,
+                                                        credentials: NavigationSettings.shared.directions.credentials,
                                                         simulating: simulationIsEnabled ? .always : .onPoorGPS)
         let navigationOptions = NavigationOptions(navigationService: navigationService)
-        let navigationViewController = NavigationViewController(for: routeResponse, routeIndex: currentRouteIndex,
-                                                                routeOptions: navigationRouteOptions,
-                                                                navigationOptions: navigationOptions)
+        let navigationViewController = NavigationViewController(for: routeResponse,
+                                                                   routeIndex: currentRouteIndex,
+                                                                   routeOptions: navigationRouteOptions,
+                                                                   navigationOptions: navigationOptions)
         navigationViewController.delegate = self
         
         present(navigationViewController, animated: true, completion: nil)
@@ -140,10 +150,10 @@ class CustomWaypointsViewController: UIViewController {
             0.5
             1
         }
-        circleLayer.circleColor = .constant(.init(color: UIColor(red: 0.9, green: 0.9, blue: 0.9, alpha: 1.0)))
+        circleLayer.circleColor = .constant(.init(UIColor(red: 0.9, green: 0.9, blue: 0.9, alpha: 1.0)))
         circleLayer.circleOpacity = .expression(opacity)
         circleLayer.circleRadius = .constant(.init(10))
-        circleLayer.circleStrokeColor = .constant(.init(color: UIColor.black))
+        circleLayer.circleStrokeColor = .constant(.init(UIColor.black))
         circleLayer.circleStrokeWidth = .constant(.init(1))
         circleLayer.circleStrokeOpacity = .expression(opacity)
         return circleLayer
@@ -168,7 +178,7 @@ class CustomWaypointsViewController: UIViewController {
             1
         })
         symbolLayer.textHaloWidth = .constant(.init(0.25))
-        symbolLayer.textHaloColor = .constant(.init(color: UIColor.black))
+        symbolLayer.textHaloColor = .constant(.init(UIColor.black))
         return symbolLayer
     }
 
@@ -177,8 +187,8 @@ class CustomWaypointsViewController: UIViewController {
         for (waypointIndex, waypoint) in waypoints.enumerated() {
             var feature = Feature(geometry: .point(Point(waypoint.coordinate)))
             feature.properties = [
-                "waypointCompleted": waypointIndex < legIndex,
-                "name": "#\(waypointIndex + 1)"
+                "waypointCompleted": .boolean(waypointIndex < legIndex),
+                "name": .number(Double(waypointIndex + 1))
             ]
             features.append(feature)
         }

@@ -1,3 +1,10 @@
+/*
+ This code example is part of the Mapbox Navigation SDK for iOS demo app,
+ which you can build and run: https://github.com/mapbox/mapbox-navigation-ios-examples
+ To learn more about each example in this app, including descriptions and links
+ to documentation, see our docs: https://docs.mapbox.com/ios/navigation/examples/route-lines-styling
+ */
+
 import UIKit
 import MapboxCoreNavigation
 import MapboxNavigation
@@ -120,13 +127,15 @@ class RouteLinesStylingViewController: UIViewController {
         let navigationService = MapboxNavigationService(routeResponse: routeResponse,
                                                         routeIndex: currentRouteIndex,
                                                         routeOptions: navigationRouteOptions,
+                                                        customRoutingProvider: NavigationSettings.shared.directions,
+                                                        credentials: NavigationSettings.shared.directions.credentials,
                                                         simulating: simulationIsEnabled ? .always : .onPoorGPS)
         
         let navigationOptions = NavigationOptions(navigationService: navigationService)
         let navigationViewController = NavigationViewController(for: routeResponse,
-                                                                routeIndex: currentRouteIndex,
-                                                                routeOptions: navigationRouteOptions,
-                                                                navigationOptions: navigationOptions)
+                                                                   routeIndex: currentRouteIndex,
+                                                                   routeOptions: navigationRouteOptions,
+                                                                   navigationOptions: navigationOptions)
         navigationViewController.delegate = self
         navigationViewController.modalPresentationStyle = .fullScreen
         
@@ -213,7 +222,7 @@ extension RouteLinesStylingViewController: NavigationMapViewDelegate {
         // main or alternative, and whether route is casing or not. For example: identifier for
         // main route line will look like this: `0x0000600001168000.main.route_line`, and for
         // alternative route line casing will look like this: `0x0000600001ddee80.alternative.route_line_casing`.
-        lineLayer.lineColor = .constant(.init(color: identifier.contains("main") ? #colorLiteral(red: 0.337254902, green: 0.6588235294, blue: 0.9843137255, alpha: 1) : #colorLiteral(red: 0.6, green: 0.6, blue: 0.6, alpha: 1)))
+        lineLayer.lineColor = .constant(.init(identifier.contains("main") ? #colorLiteral(red: 0.337254902, green: 0.6588235294, blue: 0.9843137255, alpha: 1) : #colorLiteral(red: 0.6, green: 0.6, blue: 0.6, alpha: 1)))
         lineLayer.lineWidth = .expression(lineWidthExpression())
         lineLayer.lineJoin = .constant(.round)
         lineLayer.lineCap = .constant(.round)
@@ -227,7 +236,7 @@ extension RouteLinesStylingViewController: NavigationMapViewDelegate {
         
         // Based on information stored in `identifier` property (whether route line is main or not)
         // route line will be colored differently.
-        lineLayer.lineColor = .constant(.init(color: identifier.contains("main") ? #colorLiteral(red: 0.1843137255, green: 0.4784313725, blue: 0.7764705882, alpha: 1) : #colorLiteral(red: 0.4, green: 0.4, blue: 0.4, alpha: 1)))
+        lineLayer.lineColor = .constant(.init(identifier.contains("main") ? #colorLiteral(red: 0.1843137255, green: 0.4784313725, blue: 0.7764705882, alpha: 1) : #colorLiteral(red: 0.4, green: 0.4, blue: 0.4, alpha: 1)))
         lineLayer.lineWidth = .expression(lineWidthExpression(1.2))
         lineLayer.lineJoin = .constant(.round)
         lineLayer.lineCap = .constant(.round)
@@ -249,7 +258,7 @@ extension RouteLinesStylingViewController: NavigationViewControllerDelegate {
     func navigationViewController(_ navigationViewController: NavigationViewController, routeLineLayerWithIdentifier identifier: String, sourceIdentifier: String) -> LineLayer? {
         var lineLayer = LineLayer(id: identifier)
         lineLayer.source = sourceIdentifier
-        lineLayer.lineColor = .constant(.init(color: identifier.contains("main") ? #colorLiteral(red: 0.337254902, green: 0.6588235294, blue: 0.9843137255, alpha: 1) : #colorLiteral(red: 0.6, green: 0.6, blue: 0.6, alpha: 1)))
+        lineLayer.lineColor = .constant(.init(identifier.contains("main") ? #colorLiteral(red: 0.337254902, green: 0.6588235294, blue: 0.9843137255, alpha: 1) : #colorLiteral(red: 0.6, green: 0.6, blue: 0.6, alpha: 1)))
         lineLayer.lineWidth = .expression(lineWidthExpression())
         lineLayer.lineJoin = .constant(.round)
         lineLayer.lineCap = .constant(.round)
@@ -260,7 +269,7 @@ extension RouteLinesStylingViewController: NavigationViewControllerDelegate {
     func navigationViewController(_ navigationViewController: NavigationViewController, routeCasingLineLayerWithIdentifier identifier: String, sourceIdentifier: String) -> LineLayer? {
         var lineLayer = LineLayer(id: identifier)
         lineLayer.source = sourceIdentifier
-        lineLayer.lineColor = .constant(.init(color: identifier.contains("main") ? #colorLiteral(red: 0.1843137255, green: 0.4784313725, blue: 0.7764705882, alpha: 1) : #colorLiteral(red: 0.4, green: 0.4, blue: 0.4, alpha: 1)))
+        lineLayer.lineColor = .constant(.init(identifier.contains("main") ? #colorLiteral(red: 0.1843137255, green: 0.4784313725, blue: 0.7764705882, alpha: 1) : #colorLiteral(red: 0.4, green: 0.4, blue: 0.4, alpha: 1)))
         lineLayer.lineWidth = .expression(lineWidthExpression(1.2))
         lineLayer.lineJoin = .constant(.round)
         lineLayer.lineCap = .constant(.round)

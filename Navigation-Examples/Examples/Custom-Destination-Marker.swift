@@ -1,3 +1,10 @@
+/*
+ This code example is part of the Mapbox Navigation SDK for iOS demo app,
+ which you can build and run: https://github.com/mapbox/mapbox-navigation-ios-examples
+ To learn more about each example in this app, including descriptions and links
+ to documentation, see our docs: https://docs.mapbox.com/ios/navigation/examples/custom-destination-marker
+ */
+
 import Foundation
 import UIKit
 import MapboxCoreNavigation
@@ -63,6 +70,8 @@ class CustomDestinationMarkerController: UIViewController {
         let navigationService = MapboxNavigationService(routeResponse: routeResponse,
                                                         routeIndex: 0,
                                                         routeOptions: routeOptions,
+                                                        customRoutingProvider: NavigationSettings.shared.directions,
+                                                        credentials: NavigationSettings.shared.directions.credentials,
                                                         simulating: simulationIsEnabled ? .always : .onPoorGPS)
         let navigationOptions = NavigationOptions(navigationService: navigationService)
         let navigationViewController = NavigationViewController(for: routeResponse,
@@ -113,17 +122,17 @@ extension CustomDestinationMarkerController: NavigationMapViewDelegate {
                            pointAnnotationManager: PointAnnotationManager) {
         var finalDestinationAnnotation = finalDestinationAnnotation
         if let image = UIImage(named: "marker") {
-            finalDestinationAnnotation.image = PointAnnotation.Image.custom(image: image, name: "marker")
+            finalDestinationAnnotation.image = .init(image: image, name: "marker")
         } else {
-            finalDestinationAnnotation.image = .default
+            let image = UIImage(named: "default_marker", in: .mapboxNavigation, compatibleWith: nil)!
+            finalDestinationAnnotation.image = .init(image: image, name: "marker")
         }
         
         // `PointAnnotationManager` is used to manage `PointAnnotation`s and is also exposed as
         // a property in `NavigationMapView.pointAnnotationManager`. After any modifications to the
-        // `PointAnnotation` changes must be synchronized with `PointAnnotationManager.syncAnnotations(_:)`
-        // method. To remove all annotations for specific `PointAnnotationManager`, call method below with
-        // an empty array.
-        pointAnnotationManager.syncAnnotations([finalDestinationAnnotation])
+        // `PointAnnotation` changes must be applied to `PointAnnotationManager.annotations`
+        // array. To remove all annotations for specific `PointAnnotationManager`, set an empty array.
+        pointAnnotationManager.annotations = [finalDestinationAnnotation]
     }
 }
 
@@ -136,12 +145,13 @@ extension CustomDestinationMarkerController: NavigationViewControllerDelegate {
                                   pointAnnotationManager: PointAnnotationManager) {
         var finalDestinationAnnotation = finalDestinationAnnotation
         if let image = UIImage(named: "marker") {
-            finalDestinationAnnotation.image = PointAnnotation.Image.custom(image: image, name: "marker")
+            finalDestinationAnnotation.image = .init(image: image, name: "marker")
         } else {
-            finalDestinationAnnotation.image = .default
+            let image = UIImage(named: "default_marker", in: .mapboxNavigation, compatibleWith: nil)!
+            finalDestinationAnnotation.image = .init(image: image, name: "marker")
         }
         
-        pointAnnotationManager.syncAnnotations([finalDestinationAnnotation])
+        pointAnnotationManager.annotations = [finalDestinationAnnotation]
     }
     
     func navigationViewControllerDidDismiss(_ navigationViewController: NavigationViewController, byCanceling canceled: Bool) {

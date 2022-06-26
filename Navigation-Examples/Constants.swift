@@ -167,5 +167,19 @@ let listOfExamples: [NamedController] = [
         controller: CustomUserLocationViewController.self,
         storyboard: nil,
         pushExampleToViewController: true
+    ),
+    (
+        name: "Offline Regions",
+        description: "Demonstrates how to create a custom TileStore and handle offline regions.",
+        controller: OfflineRegionsViewController.self,
+        storyboard: nil,
+        pushExampleToViewController: true
+    ),
+    (
+        name: "Custom RoutingProvider",
+        description: "Demonstrates how to implement and utilize custom `RoutingProvider`.",
+        controller: CustomRoutingProviderViewController.self,
+        storyboard: nil,
+        pushExampleToViewController: true
     )
 ]

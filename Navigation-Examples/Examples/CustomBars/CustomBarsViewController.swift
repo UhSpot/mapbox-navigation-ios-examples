@@ -1,3 +1,10 @@
+/*
+ This code example is part of the Mapbox Navigation SDK for iOS demo app,
+ which you can build and run: https://github.com/mapbox/mapbox-navigation-ios-examples
+ To learn more about each example in this app, including descriptions and links
+ to documentation, see our docs: https://docs.mapbox.com/ios/navigation/examples/custom-banner
+ */
+
 import Foundation
 import UIKit
 import MapboxCoreNavigation
@@ -22,15 +29,25 @@ class CustomBarsViewController: UIViewController {
                 }
                 
                 // For demonstration purposes, simulate locations if the Simulate Navigation option is on.
-                let navigationService = MapboxNavigationService(routeResponse: response, routeIndex: 0, routeOptions: routeOptions, simulating: simulationIsEnabled ? .always : .onPoorGPS)
+                let navigationService = MapboxNavigationService(routeResponse: response,
+                                                                routeIndex: 0,
+                                                                routeOptions: routeOptions,
+                                                                customRoutingProvider: NavigationSettings.shared.directions,
+                                                                credentials: NavigationSettings.shared.directions.credentials,
+                                                                simulating: simulationIsEnabled ? .always : .onPoorGPS)
                 
                 // Pass your custom implementations of `topBanner` and/or `bottomBanner` to `NavigationOptions`
                 // If you do not specify them explicitly, `TopBannerViewController` and `BottomBannerViewController` will be used by default.
                 // Those are `Open`, so you can also check thier source for more examples of using standard UI controls!
                 let topBanner = CustomTopBarViewController()
                 let bottomBanner = CustomBottomBarViewController()
-                let navigationOptions = NavigationOptions(navigationService: navigationService, topBanner: topBanner, bottomBanner: bottomBanner)
-                let navigationViewController = NavigationViewController(for: response, routeIndex: 0, routeOptions: routeOptions, navigationOptions: navigationOptions)
+                let navigationOptions = NavigationOptions(navigationService: navigationService,
+                                                          topBanner: topBanner,
+                                                          bottomBanner: bottomBanner)
+                let navigationViewController = NavigationViewController(for: response,
+                                                                           routeIndex: 0,
+                                                                           routeOptions: routeOptions,
+                                                                           navigationOptions: navigationOptions)
                 bottomBanner.navigationViewController = navigationViewController
                 
                 let parentSafeArea = navigationViewController.view.safeAreaLayoutGuide
@@ -49,6 +66,8 @@ class CustomBarsViewController: UIViewController {
                 navigationViewController.modalPresentationStyle = .fullScreen
                 
                 strongSelf.present(navigationViewController, animated: true, completion: nil)
+                navigationViewController.floatingButtons = []
+                navigationViewController.showsSpeedLimits = false
             }
         }
     }
@@ -58,11 +77,14 @@ class CustomBarsViewController: UIViewController {
 
 class CustomTopBarViewController: ContainerViewController {
     private lazy var instructionsBannerTopOffsetConstraint = {
-        return instructionsBannerView.topAnchor.constraint(equalTo: view.topAnchor, constant: 10)
+        return instructionsBannerView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 10)
     }()
     private lazy var centerOffset: CGFloat = calculateCenterOffset(with: view.bounds.size)
     private lazy var instructionsBannerCenterOffsetConstraint = {
         return instructionsBannerView.centerXAnchor.constraint(equalTo: view.centerXAnchor, constant: 0)
+    }()
+    private lazy var instructionsBannerWidthConstraint = {
+        return instructionsBannerView.widthAnchor.constraint(equalTo: view.widthAnchor, multiplier: 0.9)
     }()
     
     // You can Include one of the existing Views to display route-specific info
@@ -91,6 +113,7 @@ class CustomTopBarViewController: ContainerViewController {
     private func setupConstraints() {
         instructionsBannerCenterOffsetConstraint.isActive = true
         instructionsBannerTopOffsetConstraint.isActive = true
+        instructionsBannerWidthConstraint.isActive = true
     }
     
     private func updateConstraints() {

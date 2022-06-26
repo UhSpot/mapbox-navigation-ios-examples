@@ -1,3 +1,10 @@
+/*
+ This code example is part of the Mapbox Navigation SDK for iOS demo app,
+ which you can build and run: https://github.com/mapbox/mapbox-navigation-ios-examples
+ To learn more about each example in this app, including descriptions and links
+ to documentation, see our docs: https://docs.mapbox.com/ios/navigation/examples/custom-navigation-camera
+ */
+
 import UIKit
 import MapboxNavigation
 import MapboxMaps
@@ -66,13 +73,15 @@ class CustomNavigationCameraViewController: UIViewController {
         let navigationService = MapboxNavigationService(routeResponse: routeResponse,
                                                         routeIndex: 0,
                                                         routeOptions: navigationRouteOptions,
+                                                        customRoutingProvider: NavigationSettings.shared.directions,
+                                                        credentials: NavigationSettings.shared.directions.credentials,
                                                         simulating: simulationIsEnabled ? .always : .onPoorGPS)
         
         let navigationOptions = NavigationOptions(navigationService: navigationService)
         let navigationViewController = NavigationViewController(for: routeResponse,
-                                                                routeIndex: 0,
-                                                                routeOptions: navigationRouteOptions,
-                                                                navigationOptions: navigationOptions)
+                                                                   routeIndex: 0,
+                                                                   routeOptions: navigationRouteOptions,
+                                                                   navigationOptions: navigationOptions)
         navigationViewController.modalPresentationStyle = .fullScreen
         
         // Modify default `NavigationViewportDataSource` and `NavigationCameraStateTransition` to change

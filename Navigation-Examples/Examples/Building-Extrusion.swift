@@ -1,3 +1,10 @@
+/*
+ This code example is part of the Mapbox Navigation SDK for iOS demo app,
+ which you can build and run: https://github.com/mapbox/mapbox-navigation-ios-examples
+ To learn more about each example in this app, including descriptions and links
+ to documentation, see our docs: https://docs.mapbox.com/ios/navigation/examples/building-extrusion
+ */
+
 import UIKit
 import MapboxCoreNavigation
 import MapboxNavigation
@@ -28,11 +35,14 @@ class BuildingExtrusionViewController: UIViewController, NavigationMapViewDelega
     
     var routeResponse: RouteResponse? {
         didSet {
+            currentRouteIndex = 0
+            
             guard currentRoute != nil else {
                 navigationMapView.removeRoutes()
+                navigationMapView.removeWaypoints()
+                waypoints = []
                 return
             }
-            currentRouteIndex = 0
         }
     }
     
@@ -132,6 +142,8 @@ class BuildingExtrusionViewController: UIViewController, NavigationMapViewDelega
         let navigationService = MapboxNavigationService(routeResponse: routeResponse,
                                                         routeIndex: currentRouteIndex,
                                                         routeOptions: navigationRouteOptions,
+                                                        customRoutingProvider: NavigationSettings.shared.directions,
+                                                        credentials: NavigationSettings.shared.directions.credentials,
                                                         simulating: simulationIsEnabled ? .always : .onPoorGPS)
         let navigationOptions = NavigationOptions(navigationService: navigationService)
         let navigationViewController = NavigationViewController(for: routeResponse,
@@ -152,10 +164,10 @@ class BuildingExtrusionViewController: UIViewController, NavigationMapViewDelega
     
     func toggleDayNightStyle() {
         let style = navigationMapView.mapView?.mapboxMap.style
-        if style?.uri?.rawValue == MapboxMaps.Style.navigationNightStyleURL.absoluteString {
-            style?.uri = StyleURI(url: MapboxMaps.Style.navigationDayStyleURL)
+        if style?.uri == StyleURI.navigationNight {
+            style?.uri = StyleURI.navigationDay
         } else {
-            style?.uri = StyleURI(url: MapboxMaps.Style.navigationNightStyleURL)
+            style?.uri = StyleURI.navigationNight
         }
     }
     
@@ -247,7 +259,7 @@ class BuildingExtrusionViewController: UIViewController, NavigationMapViewDelega
             guard let navigationService = (self.presentedViewController as? NavigationViewController)?.navigationService else { return }
             let router = navigationService.router
             guard router.route.legs.count > router.routeProgress.legIndex + 1 else { return }
-            router.routeProgress.legIndex += 1
+            router.advanceLegIndex(completionHandler: nil)
             
             navigationService.start()
         })

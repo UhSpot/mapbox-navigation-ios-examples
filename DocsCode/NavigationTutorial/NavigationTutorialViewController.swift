@@ -144,7 +144,7 @@ class ViewController: UIViewController {
         
         // If there's already a route line on the map, update its shape to the new route
         if mapView.mapboxMap.style.sourceExists(withId: sourceIdentifier) {
-            try? mapView.mapboxMap.style.updateGeoJSONSource(withId: sourceIdentifier, geoJSON: feature)
+            try? mapView.mapboxMap.style.updateGeoJSONSource(withId: sourceIdentifier, geoJSON: .feature(feature))
         } else {
             // Convert the route’s coordinates into a lineString Feature and add the source of the route line to the map
             var geoJSONSource = GeoJSONSource()
@@ -154,7 +154,7 @@ class ViewController: UIViewController {
             // Customize the route line color and width
             var lineLayer = LineLayer(id: "routeLayer")
             lineLayer.source = sourceIdentifier
-            lineLayer.lineColor = .constant(.init(color: UIColor(red: 0.1897518039, green: 0.3010634184, blue: 0.7994888425, alpha: 1.0)))
+            lineLayer.lineColor = .constant(.init(UIColor(red: 0.1897518039, green: 0.3010634184, blue: 0.7994888425, alpha: 1.0)))
             lineLayer.lineWidth = .constant(3)
             
             // Add the style layer of the route line to the map

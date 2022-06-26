@@ -1,3 +1,10 @@
+/*
+ This code example is part of the Mapbox Navigation SDK for iOS demo app,
+ which you can build and run: https://github.com/mapbox/mapbox-navigation-ios-examples
+ To learn more about each example in this app, including descriptions and links
+ to documentation, see our docs: https://docs.mapbox.com/ios/navigation/examples/embedded-navigation
+ */
+
 import Foundation
 import MapboxCoreNavigation
 import MapboxNavigation
@@ -54,9 +61,17 @@ class EmbeddedExampleViewController: UIViewController {
     func startEmbeddedNavigation() {
         // For demonstration purposes, simulate locations if the Simulate Navigation option is on.
         guard let routeResponse = routeResponse else { return }
-        let navigationService = MapboxNavigationService(routeResponse: routeResponse, routeIndex: 0, routeOptions: routeOptions, simulating: simulationIsEnabled ? .always : .onPoorGPS)
+        let navigationService = MapboxNavigationService(routeResponse: routeResponse,
+                                                        routeIndex: 0,
+                                                        routeOptions: routeOptions,
+                                                        customRoutingProvider: NavigationSettings.shared.directions,
+                                                        credentials: NavigationSettings.shared.directions.credentials,
+                                                        simulating: simulationIsEnabled ? .always : .onPoorGPS)
         let navigationOptions = NavigationOptions(navigationService: navigationService)
-        let navigationViewController = NavigationViewController(for: routeResponse, routeIndex: 0, routeOptions: routeOptions, navigationOptions: navigationOptions)
+        let navigationViewController = NavigationViewController(for: routeResponse,
+                                                                   routeIndex: 0,
+                                                                   routeOptions: routeOptions,
+                                                                   navigationOptions: navigationOptions)
         
         navigationViewController.delegate = self
         addChild(navigationViewController)

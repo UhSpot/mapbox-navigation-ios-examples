@@ -1,3 +1,10 @@
+/*
+ This code example is part of the Mapbox Navigation SDK for iOS demo app,
+ which you can build and run: https://github.com/mapbox/mapbox-navigation-ios-examples
+ To learn more about each example in this app, including descriptions and links
+ to documentation, see our docs: https://docs.mapbox.com/ios/navigation/examples/advanced
+ */
+
 import UIKit
 import MapboxCoreNavigation
 import MapboxNavigation
@@ -93,11 +100,15 @@ class AdvancedViewController: UIViewController, NavigationMapViewDelegate, Navig
         let navigationService = MapboxNavigationService(routeResponse: routeResponse,
                                                         routeIndex: currentRouteIndex,
                                                         routeOptions: navigationRouteOptions,
+                                                        customRoutingProvider: NavigationSettings.shared.directions,
+                                                        credentials: NavigationSettings.shared.directions.credentials,
                                                         simulating: simulationIsEnabled ? .always : .onPoorGPS)
+        
         let navigationOptions = NavigationOptions(navigationService: navigationService)
-        let navigationViewController = NavigationViewController(for: routeResponse, routeIndex: currentRouteIndex,
-                                                                routeOptions: navigationRouteOptions,
-                                                                navigationOptions: navigationOptions)
+        let navigationViewController = NavigationViewController(for: routeResponse,
+                                                                   routeIndex: currentRouteIndex,
+                                                                   routeOptions: navigationRouteOptions,
+                                                                   navigationOptions: navigationOptions)
         navigationViewController.delegate = self
         
         present(navigationViewController, animated: true, completion: nil)

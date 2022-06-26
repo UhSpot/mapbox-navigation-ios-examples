@@ -1,3 +1,10 @@
+/*
+ This code example is part of the Mapbox Navigation SDK for iOS demo app,
+ which you can build and run: https://github.com/mapbox/mapbox-navigation-ios-examples
+ To learn more about each example in this app, including descriptions and links
+ to documentation, see our docs: https://docs.mapbox.com/ios/navigation/examples/styled-ui-elements
+ */
+
 import Foundation
 import UIKit
 import MapboxCoreNavigation
@@ -22,9 +29,18 @@ class CustomStyleUIElements: UIViewController {
                 }
                 
                 // For demonstration purposes, simulate locations if the Simulate Navigation option is on.
-                let navigationService = MapboxNavigationService(routeResponse: response, routeIndex: 0, routeOptions: routeOptions, simulating: simulationIsEnabled ? .always : .onPoorGPS)
-                let navigationOptions = NavigationOptions(styles: [CustomDayStyle(), CustomNightStyle()], navigationService: navigationService)
-                let navigationViewController = NavigationViewController(for: response, routeIndex: 0, routeOptions: routeOptions, navigationOptions: navigationOptions)
+                let navigationService = MapboxNavigationService(routeResponse: response,
+                                                                routeIndex: 0,
+                                                                routeOptions: routeOptions,
+                                                                customRoutingProvider: NavigationSettings.shared.directions,
+                                                                credentials: NavigationSettings.shared.directions.credentials,
+                                                                simulating: simulationIsEnabled ? .always : .onPoorGPS)
+                let navigationOptions = NavigationOptions(styles: [CustomDayStyle(), CustomNightStyle()],
+                                                          navigationService: navigationService)
+                let navigationViewController = NavigationViewController(for: response,
+                                                                           routeIndex: 0,
+                                                                           routeOptions: routeOptions,
+                                                                           navigationOptions: navigationOptions)
                 navigationViewController.modalPresentationStyle = .fullScreen
                 // Render part of the route that has been traversed with full transparency, to give the illusion of a disappearing route.
                 navigationViewController.routeLineTracksTraversal = true
@@ -76,7 +92,6 @@ class CustomDayStyle: DayStyle {
         ManeuverView.appearance(whenContainedInInstancesOf: [NextBannerView.self]).secondaryColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 0.5)
         ManeuverView.appearance(whenContainedInInstancesOf: [StepInstructionsView.self]).primaryColor = darkGrayColor
         ManeuverView.appearance(whenContainedInInstancesOf: [StepInstructionsView.self]).secondaryColor = lightGrayColor
-        MarkerView.appearance().pinColor = blueColor
         NextBannerView.appearance().backgroundColor = backgroundColor
         NextInstructionLabel.appearance().textColor = #colorLiteral(red: 0.9842069745, green: 0.9843751788, blue: 0.9841964841, alpha: 1)
         NavigationMapView.appearance().tintColor = blueColor

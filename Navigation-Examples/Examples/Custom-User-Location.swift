@@ -1,3 +1,10 @@
+/*
+ This code example is part of the Mapbox Navigation SDK for iOS demo app,
+ which you can build and run: https://github.com/mapbox/mapbox-navigation-ios-examples
+ To learn more about each example in this app, including descriptions and links
+ to documentation, see our docs: https://docs.mapbox.com/ios/navigation/examples/custom-location-indicator
+ */
+
 import UIKit
 import MapboxCoreNavigation
 import MapboxNavigation
@@ -38,12 +45,6 @@ class CustomUserLocationViewController: UIViewController, NavigationMapViewDeleg
     }
     
     var waypoints: [Waypoint] = []
-    
-    var startButtonHighlighted: Bool = false {
-        didSet {
-            startButton.backgroundColor = startButtonHighlighted ? .clear : .blue
-        }
-    }
     
     private let startButton = UIButton()
     private let clearButton = UIButton()
@@ -89,10 +90,9 @@ class CustomUserLocationViewController: UIViewController, NavigationMapViewDeleg
     
     func setupStartButton() {
         startButton.setTitle("Start", for: .normal)
-        startButton.addTarget(self, action: #selector(startButtonChangeColor), for: .touchUpInside)
-        startButtonHighlighted = false
         startButton.layer.cornerRadius = 5
         startButton.contentEdgeInsets = UIEdgeInsets(top: 5, left: 5, bottom: 5, right: 5)
+        startButton.backgroundColor = .blue
         
         startButton.addTarget(self, action: #selector(performAction), for: .touchUpInside)
         view.addSubview(startButton)
@@ -108,10 +108,6 @@ class CustomUserLocationViewController: UIViewController, NavigationMapViewDeleg
         navigationMapView.addGestureRecognizer(longPressGestureRecognizer)
     }
     
-    @objc private func startButtonChangeColor() {
-        startButtonHighlighted = !startButtonHighlighted
-    }
-    
     @objc func handleLongPress(_ gesture: UILongPressGestureRecognizer) {
         guard gesture.state == .began else { return }
         let gestureLocation = gesture.location(in: navigationMapView)
@@ -123,7 +119,7 @@ class CustomUserLocationViewController: UIViewController, NavigationMapViewDeleg
         
         let waypoint = Waypoint(coordinate: destinationCoordinate, name: "Dropped Pin #\(waypoints.endIndex + 1)")
         waypoint.targetCoordinate = destinationCoordinate
-        // Change the coordinate accuracy of `Waypoint` to negative beofre add it to the `waypoints`. Thus the route requested on the `waypoints` is considered viable.
+        // Change the coordinate accuracy of `Waypoint` to negative before adding it to the `waypoints`. Thus the route requested on the `waypoints` is considered viable.
         waypoint.coordinateAccuracy = -1
         waypoints.append(waypoint)
 
@@ -138,7 +134,7 @@ class CustomUserLocationViewController: UIViewController, NavigationMapViewDeleg
         }
 
         let userWaypoint = Waypoint(coordinate: currentCoordinate)
-        // Change the coordinate accuracy of `Waypoint` to negative beofre add it to the `waypoints`. Thus the route requested on the `waypoints` is considered viable.
+        // Change the coordinate accuracy of `Waypoint` to negative before adding it to the `waypoints`. Thus the route requested on the `waypoints` is considered viable.
         userWaypoint.coordinateAccuracy = -1
         waypoints.insert(userWaypoint, at: 0)
         let navigationRouteOptions = NavigationRouteOptions(waypoints: waypoints)
@@ -165,18 +161,29 @@ class CustomUserLocationViewController: UIViewController, NavigationMapViewDeleg
     }
     
     @objc func performAction(_ sender: Any) {
+        guard routeResponse != nil, navigationRouteOptions != nil else {
+            let alertController = UIAlertController(title: "Create route",
+                                                    message: "Long tap on the map to create a route first.",
+                                                    preferredStyle: .alert)
+            alertController.addAction(UIAlertAction(title: "OK", style: .default))
+            return present(alertController, animated: true)
+        }
         // Set Up the alert controller to switch between different userLocationStyle.
         let alertController = UIAlertController(title: "Choose UserLocationStyle",
                                                 message: "Select the user location style",
                                                 preferredStyle: .actionSheet)
         
         let courseView: ActionHandler = { _ in self.setupCourseView() }
-        let puck2D: ActionHandler = { _ in self.setupPuck2D() }
+        let defaultPuck2D: ActionHandler = { _ in self.setupDefaultPuck2D() }
+        let invisiblePuck: ActionHandler = { _ in self.setupInvisiblePuck() }
+        let puck2D: ActionHandler = { _ in self.setupCustomPuck2D() }
         let puck3D: ActionHandler = { _ in self.setupPuck3D() }
-        let cancel: ActionHandler = { _ in self.startButtonHighlighted = false }
+        let cancel: ActionHandler = { _ in }
         
         let actionPayloads: [(String, UIAlertAction.Style, ActionHandler?)] = [
+            ("Invisible Puck", .default, invisiblePuck),
             ("Default Course View", .default, courseView),
+            ("2D Default Puck", .default, defaultPuck2D),
             ("2D Arrow Puck", .default, puck2D),
             ("3D Car Puck", .default, puck3D),
             ("Cancel", .cancel, cancel)
@@ -197,11 +204,19 @@ class CustomUserLocationViewController: UIViewController, NavigationMapViewDeleg
     func setupCourseView() {
         // Given configuration to the `UserLocationStyle.courseView` through the customizing of `UserPuckCourseView`. Both `UserPuckCourseView` and `UserHaloView` are subclassable.
         // By default `NavigationMapView.userLocationStyle` property is set to `UserLocationStyle.courseView(_:)`.
-        presentNavigationViewController()
+        presentNavigationViewController(.courseView())
     }
     
-    func setupPuck2D() {
-        // It's optional to set up `Puck2DConfiguration` to the `UserLocationStyle.puck2D`. Otherwise the defualt configutaion for the `UserLocationStyle.puck2D` is `Puck2DConfiguration()`.
+    func setupDefaultPuck2D() {
+        presentNavigationViewController(.puck2D())
+    }
+    
+    func setupInvisiblePuck() {
+        presentNavigationViewController(.none)
+    }
+    
+    func setupCustomPuck2D() {
+        // It's optional to set up `Puck2DConfiguration` to the `UserLocationStyle.puck2D`. Otherwise the default configuration for the `UserLocationStyle.puck2D` is `Puck2DConfiguration()`.
         var puck2DConfiguration = Puck2DConfiguration()
         if #available(iOS 13.0, *) {
             puck2DConfiguration.topImage = UIImage(systemName: "arrow.up")
@@ -263,20 +278,20 @@ class CustomUserLocationViewController: UIViewController, NavigationMapViewDeleg
         let navigationService = MapboxNavigationService(routeResponse: routeResponse,
                                                         routeIndex: 0,
                                                         routeOptions: navigationRouteOptions,
+                                                        customRoutingProvider: NavigationSettings.shared.directions,
+                                                        credentials: NavigationSettings.shared.directions.credentials,
                                                         simulating: simulationIsEnabled ? .always : .onPoorGPS)
         let navigationOptions = NavigationOptions(navigationService: navigationService)
         let navigationViewController = NavigationViewController(for: routeResponse,
-                                                                routeIndex: 0,
-                                                                routeOptions: navigationRouteOptions,
-                                                                navigationOptions: navigationOptions)
+                                                                   routeIndex: 0,
+                                                                   routeOptions: navigationRouteOptions,
+                                                                   navigationOptions: navigationOptions)
         navigationViewController.routeLineTracksTraversal = true
         navigationViewController.delegate = self
         navigationViewController.modalPresentationStyle = .fullScreen
         
         // If not customizing the `NavigationMapView.userLocationStyle`, it defaults as the `UserLocationStyle.courseView(_:)`.
-        if let userLocationStyle = userLocationStyle {
-            navigationViewController.navigationMapView?.userLocationStyle = userLocationStyle
-        }
+        navigationViewController.navigationMapView?.userLocationStyle = userLocationStyle
 
         navigationViewController.navigationMapView?.mapView.mapboxMap.style.uri = navigationMapView.mapView?.mapboxMap.style.uri
         
